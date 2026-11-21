@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dspkit"
+version = "1.0.0"
+description = "Stage 1 DSP reference library: filter design and implementation from first principles in NumPy"
+requires-python = ">=3.9"
+dependencies = ["numpy>=1.24"]
+
+[project.optional-dependencies]
+dev = ["scipy>=1.10", "pytest>=7", "matplotlib>=3.7"]
+
+[tool.setuptools]
+packages = ["dspkit"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

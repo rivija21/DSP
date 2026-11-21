@@ -1,0 +1,966 @@
+<title>dspkit Study Guide</title>
+<meta name="description" content="Stage 1 DSP: filter design and implementation from first principles in NumPy">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=STIX+Two+Text:ital@0;1&display=swap">
+<style>
+/* Layout: datasheet. Sticky chapter rail on the left, single reading column, code annotated beside its notes. */
+:root {
+  --bg: #f4f6f7;
+  --surface: #ffffff;
+  --ink: #141a1f;
+  --muted: #56606b;
+  --rule: #d9dee3;
+  --accent: #0a6f6a;
+  --accent-soft: #e2f1ef;
+  --warn: #9a5b07;
+  --warn-soft: #fbf0df;
+  --code-bg: #f7f9fa;
+  --tok-kw: #7a2f8f;
+  --tok-str: #1d6b2a;
+  --tok-num: #a1460b;
+  --tok-com: #6f7a85;
+  --tok-fn: #0a5a8a;
+  --font-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --font-math: "STIX Two Text", "Cambria Math", "Times New Roman", serif;
+  --rail: 236px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1215; --surface: #151b20; --ink: #e3e8ec; --muted: #9aa5ae; --rule: #2a333b;
+    --accent: #41c2b8; --accent-soft: #15302e; --warn: #e3a94f; --warn-soft: #2e2414;
+    --code-bg: #11171b; --tok-kw: #d39be6; --tok-str: #8fd19b; --tok-num: #f0a66a; --tok-com: #7d8a95; --tok-fn: #7fc4f0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1215; --surface: #151b20; --ink: #e3e8ec; --muted: #9aa5ae; --rule: #2a333b;
+  --accent: #41c2b8; --accent-soft: #15302e; --warn: #e3a94f; --warn-soft: #2e2414;
+  --code-bg: #11171b; --tok-kw: #d39be6; --tok-str: #8fd19b; --tok-num: #f0a66a; --tok-com: #7d8a95; --tok-fn: #7fc4f0;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.65 var(--font-body); }
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.shell { display: grid; grid-template-columns: var(--rail) minmax(0, 1fr); max-width: 1320px; margin: 0 auto; padding-inline: 16px; gap: 40px; }
+nav.rail { position: sticky; top: env(safe-area-inset-top, 0px); align-self: start; max-height: 100vh; overflow-y: auto; padding-block: 28px; font-size: 13px; }
+nav.rail .brand { font: 700 18px/1.2 var(--font-display); letter-spacing: .01em; margin-bottom: 4px; }
+nav.rail .sub { color: var(--muted); font-size: 12px; margin-bottom: 18px; }
+nav.rail ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+nav.rail a { display: grid; grid-template-columns: 28px 1fr; text-decoration: none; color: var(--muted); padding: 5px 8px; border-radius: 4px; }
+nav.rail a .n { font-family: var(--font-mono); font-size: 11px; padding-top: 2px; }
+nav.rail a:hover { color: var(--ink); background: var(--surface); }
+nav.rail a.active { color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+nav.rail .group { margin: 14px 0 4px 8px; font: 600 10.5px/1 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+
+main { min-width: 0; padding-block: 28px 80px; }
+.col { max-width: 860px; }
+header.top { border-bottom: 1px solid var(--rule); padding-bottom: 24px; margin-bottom: 8px; }
+.eyebrow { font: 600 11px/1 var(--font-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 700 clamp(30px, 4.4vw, 44px)/1.08 var(--font-display); margin: 10px 0 12px; text-wrap: balance; letter-spacing: -.005em; }
+.lede { font-size: 16.5px; color: var(--muted); max-width: 68ch; margin: 0; }
+.specs { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 18px; font: 12.5px/1.4 var(--font-mono); color: var(--muted); }
+.specs b { color: var(--ink); font-weight: 600; }
+
+section.ch { padding-top: 40px; border-top: 1px solid var(--rule); margin-top: 40px; }
+section.ch:first-of-type { border-top: 0; margin-top: 8px; }
+.chno { font: 600 12px/1 var(--font-mono); color: var(--muted); letter-spacing: .08em; }
+h2 { font: 700 30px/1.15 var(--font-display); margin: 6px 0 6px; text-wrap: balance; }
+.chfile { font: 13px var(--font-mono); color: var(--muted); margin-bottom: 18px; }
+h3 { font: 600 19px/1.3 var(--font-display); margin: 34px 0 8px; letter-spacing: .005em; }
+h4 { font: 600 13px/1.3 var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 22px 0 6px; }
+p, li { max-width: 72ch; }
+p { margin: 0 0 12px; }
+ul, ol { padding-left: 22px; margin: 0 0 14px; }
+li { margin-bottom: 4px; }
+code { font: .88em var(--font-mono); background: var(--code-bg); border: 1px solid var(--rule); border-radius: 3px; padding: 0 4px; }
+pre { line-height: 1.5; }
+pre code { border: 0; padding: 0; background: none; font-size: 12.8px; }
+
+.eq { font-family: var(--font-math); font-size: 17px; background: var(--surface); border: 1px solid var(--rule); border-left: 3px solid var(--accent); padding: 12px 16px; margin: 12px 0 16px; overflow-x: auto; line-height: 1.75; }
+.eq .lbl { font: 600 10.5px var(--font-mono); letter-spacing: .1em; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 2px; }
+.eq i { font-style: italic; }
+
+.tbl { overflow-x: auto; margin: 10px 0 18px; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { text-align: left; padding: 7px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font: 600 11px var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); background: var(--code-bg); }
+tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--font-mono); font-size: 12.5px; }
+td code { white-space: nowrap; }
+
+.annot { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 0; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); margin: 12px 0 22px; overflow: hidden; }
+.annot .src { min-width: 0; border-right: 1px solid var(--rule); background: var(--code-bg); }
+.annot .src .bar, .codeblock .bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 12px; border-bottom: 1px solid var(--rule); font: 12px var(--font-mono); color: var(--muted); }
+.annot pre, .codeblock pre { margin: 0; padding: 12px 14px; overflow-x: auto; max-height: 560px; overflow-y: auto; }
+.annot ol.notes { margin: 0; padding: 14px 18px 14px 36px; font-size: 13.5px; line-height: 1.55; }
+.annot ol.notes li { margin-bottom: 9px; }
+.annot ol.notes code { font-size: 12px; }
+.codeblock { border: 1px solid var(--rule); border-radius: 6px; background: var(--code-bg); margin: 12px 0 20px; overflow: hidden; }
+button.copy { font: 600 11px var(--font-mono); color: var(--accent); background: transparent; border: 1px solid var(--rule); border-radius: 4px; padding: 3px 8px; cursor: pointer; }
+button.copy:hover { background: var(--accent-soft); }
+
+.note, .pitfall { border-radius: 6px; padding: 10px 14px; margin: 14px 0; font-size: 14px; }
+.note { background: var(--accent-soft); }
+.pitfall { background: var(--warn-soft); }
+.pitfall b.tag, .note b.tag { font: 600 10.5px var(--font-mono); letter-spacing: .12em; text-transform: uppercase; display: block; margin-bottom: 2px; }
+.pitfall b.tag { color: var(--warn); }
+.note b.tag { color: var(--accent); }
+.pitfall ul, .note ul { margin: 4px 0 0; }
+
+figure { margin: 16px 0 22px; }
+figure .frame { background: #ffffff; border: 1px solid var(--rule); border-radius: 6px; padding: 8px; overflow-x: auto; }
+figure img { display: block; width: 100%; height: auto; min-width: 560px; }
+figcaption { font-size: 13px; color: var(--muted); margin-top: 6px; max-width: 80ch; }
+figcaption b { color: var(--ink); font-weight: 600; }
+
+.flow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 6px; margin: 14px 0 18px; counter-reset: st; }
+.flow .st { flex: 1 1 130px; min-width: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 10px 12px; font-size: 13px; line-height: 1.4; position: relative; }
+.flow .st b { display: block; font: 600 13.5px var(--font-display); margin-bottom: 3px; }
+.flow .st b::before { counter-increment: st; content: counter(st) "  "; font-family: var(--font-mono); color: var(--accent); font-size: 12px; }
+.flow .st span { color: var(--muted); }
+
+.diagram { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 10px; overflow-x: auto; margin: 12px 0 18px; }
+.diagram svg { display: block; max-width: 100%; height: auto; min-width: 460px; margin: 0 auto; }
+.diagram .w { stroke: var(--ink); stroke-width: 1.4; fill: none; }
+.diagram .fb { stroke: var(--accent); stroke-width: 1.4; fill: none; }
+.diagram .node { fill: var(--surface); stroke: var(--ink); stroke-width: 1.4; }
+.diagram .reg { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.4; }
+.diagram text { font: 13px var(--font-mono); fill: var(--ink); }
+.diagram text.g { fill: var(--muted); font-size: 12px; }
+.diagram text.ga { fill: var(--accent); font-size: 12px; }
+.diagram .ah { fill: var(--ink); }
+.diagram .aha { fill: var(--accent); }
+
+.results { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; margin: 12px 0 18px; }
+.results div { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 9px 12px; }
+.results .v { font: 600 20px/1.2 var(--font-mono); font-variant-numeric: tabular-nums; }
+.results .k { font-size: 12px; color: var(--muted); line-height: 1.35; margin-top: 2px; }
+
+/* exercises */
+.ex h3 { margin-top: 26px; }
+.ex ol { counter-reset: none; }
+.ex li { margin-bottom: 9px; }
+
+/* file browser */
+.files { display: grid; grid-template-columns: 230px minmax(0, 1fr); border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); overflow: hidden; min-height: 520px; margin: 14px 0; }
+.files .tree { border-right: 1px solid var(--rule); padding: 8px 0; font: 12.5px/1.4 var(--font-mono); overflow-y: auto; max-height: 680px; }
+.files .tree .dir { padding: 6px 12px 2px; color: var(--muted); font-weight: 600; }
+.files .tree button { display: block; width: 100%; text-align: left; border: 0; background: none; font: inherit; color: var(--ink); padding: 3px 12px 3px 22px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.files .tree button:hover { background: var(--code-bg); }
+.files .tree button[aria-current="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.files .view { min-width: 0; display: flex; flex-direction: column; }
+.files .view .bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--rule); font: 12.5px var(--font-mono); }
+.files .view .bar .meta { color: var(--muted); }
+.files .view pre { margin: 0; padding: 12px 14px; overflow: auto; flex: 1; max-height: 640px; background: var(--code-bg); }
+.files .view img { max-width: 100%; background: #fff; display: block; margin: 12px auto; }
+.dl { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 12px 0; }
+button.primary { font: 600 14px var(--font-body); background: var(--accent); color: var(--surface); border: 0; border-radius: 6px; padding: 10px 16px; cursor: pointer; }
+button.primary:hover { filter: brightness(1.08); }
+.dlmsg { font-size: 13px; color: var(--muted); }
+
+/* highlight.js tokens */
+.hljs-keyword, .hljs-built_in, .hljs-literal { color: var(--tok-kw); }
+.hljs-string, .hljs-doctag { color: var(--tok-str); }
+.hljs-number { color: var(--tok-num); }
+.hljs-comment, .hljs-meta { color: var(--tok-com); font-style: italic; }
+.hljs-title, .hljs-title.function_ { color: var(--tok-fn); }
+.hljs-params { color: var(--ink); }
+
+@media (max-width: 980px) {
+  .annot { grid-template-columns: minmax(0, 1fr); }
+  .annot .src { border-right: 0; border-bottom: 1px solid var(--rule); }
+}
+@media (max-width: 860px) {
+  .shell { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  nav.rail { position: static; max-height: none; padding-block: 16px 0; border-bottom: 1px solid var(--rule); }
+  nav.rail ol { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  nav.rail .group { display: none; }
+  .files { grid-template-columns: minmax(0, 1fr); }
+  .files .tree { border-right: 0; border-bottom: 1px solid var(--rule); max-height: 220px; }
+}
+</style>
+
+<div class="shell">
+<nav class="rail" aria-label="Chapters">
+  <div class="brand">dspkit</div>
+  <div class="sub">Stage 1 &middot; NumPy reference DSP</div>
+  <ol>
+    <li class="group">Method</li>
+    <li><a href="#method"><span class="n">00</span>Workflow &amp; conventions</a></li>
+    <li class="group">Blocks</li>
+    <li><a href="#core"><span class="n">01</span>Filtering core</a></li>
+    <li><a href="#fir"><span class="n">02</span>FIR design</a></li>
+    <li><a href="#iir"><span class="n">03</span>IIR design</a></li>
+    <li><a href="#fft"><span class="n">04</span>FFT &amp; fast convolution</a></li>
+    <li><a href="#fixed"><span class="n">05</span>Fixed point</a></li>
+    <li><a href="#multirate"><span class="n">06</span>Multirate &amp; CIC</a></li>
+    <li><a href="#adaptive"><span class="n">07</span>Adaptive filters</a></li>
+    <li class="group">Practice</li>
+    <li><a href="#template"><span class="n">08</span>Writing a new block</a></li>
+    <li><a href="#exercises"><span class="n">09</span>Exercises</a></li>
+    <li><a href="#files"><span class="n">10</span>Package files</a></li>
+  </ol>
+</nav>
+
+<main>
+<div class="col">
+<header class="top">
+  <div class="eyebrow">Signals &amp; Systems &middot; practical track &middot; stage 1 of 3</div>
+  <h1>Implementing DSP blocks from first principles</h1>
+  <p class="lede">This is a reading guide to <code>dspkit</code>, a NumPy library where every filter, transform and rate changer is written out explicitly. Each chapter covers the algorithm, what the code means line by line, the numerical pitfalls, and how the block is verified. Signals-and-systems fundamentals are assumed.</p>
+  <div class="specs"><span><b>7</b> modules</span><span><b>76</b> SciPy cross-checks</span><span><b>6</b> example scripts</span><span><b>26</b> exercises</span><span>Python &ge; 3.9 &middot; NumPy only at runtime</span></div>
+</header>
+
+<!-- ============================================================ 00 -->
+<section class="ch" id="method">
+<div class="chno">CHAPTER 00</div>
+<h2>Workflow and conventions</h2>
+<p>Every block in the package was built the same way. Follow the same sequence for any block you write for coursework. Steps 5 and 6 are what connect this stage to the FPGA work in stage 3.</p>
+<div class="flow">
+  <div class="st"><b>Equation</b><span>Write the defining recurrence, plus the state it needs.</span></div>
+  <div class="st"><b>Float model</b><span>Explicit loop with explicit state, in NumPy.</span></div>
+  <div class="st"><b>Cross-check</b><span>Compare with SciPy on random and edge-case input using <code>allclose</code>.</span></div>
+  <div class="st"><b>Streaming test</b><span>Split the input into blocks and carry the state across. The output must be identical.</span></div>
+  <div class="st"><b>Bit-true twin</b><span>Integer codes, declared widths, named rounding points.</span></div>
+  <div class="st"><b>Golden vectors</b><span><code>.mem</code> files that the HDL testbench must reproduce exactly.</span></div>
+</div>
+
+<h3>Conventions used by every module</h3>
+<div class="tbl"><table>
+<tr><th>Item</th><th>Convention</th><th>Why</th></tr>
+<tr><td>Transfer function</td><td><code>b</code>, <code>a</code> in ascending powers of z<sup>&minus;1</sup>; <code>a[0]</code> normalised to 1</td><td>Same as SciPy and MATLAB, and it maps directly onto the difference equation</td></tr>
+<tr><td>Frequency</td><td>explicit <code>fs</code>, default <code>fs=2.0</code>, so 1.0 = Nyquist</td><td>Pass <code>fs=48000</code> and you can write band edges in Hz</td></tr>
+<tr><td>zpk</td><td><code>(z, p, k)</code>: complex root arrays and a real gain</td><td>Design is carried out on roots; polynomials are ill-conditioned</td></tr>
+<tr><td>SOS</td><td><code>(n_sections, 6)</code>, rows <code>[b0 b1 b2 1 a1 a2]</code></td><td>Same layout as <code>scipy.signal.sosfilt</code>; the highest-Q section comes last</td></tr>
+<tr><td>Filter state</td><td>functions return <code>(y, zf)</code>; pass <code>zf</code> back in as <code>zi</code></td><td>Block processing gives exactly the same output as one long call</td></tr>
+<tr><td>Fixed point</td><td><code>QFormat(m, n)</code>: m integer bits <em>including</em> the sign bit, n fractional bits</td><td>Q(1,15) is the usual 16-bit "Q15"; data is stored as int64 codes</td></tr>
+<tr><td>Linear phase</td><td><code>firls</code> and <code>remez</code> produce Type I (odd N)</td><td>Keeps the derivation to one cosine series</td></tr>
+</table></div>
+
+<h3>Running it</h3>
+<div class="codeblock"><div class="bar"><span>shell</span><button class="copy" type="button">Copy</button></div><pre><code class="language-bash">python -m venv .venv &amp;&amp; source .venv/bin/activate
+pip install -r requirements.txt
+pytest                      # 76 tests, about 2 s
+python run_examples.py      # writes examples/figures/*.png and *.mem golden vectors
+python -c "from dspkit import fir; print(fir.remez(31, [0, .4, .5, 1], [1, 0])[:4])"</code></pre></div>
+</section>
+
+<!-- ============================================================ 01 -->
+<section class="ch" id="core">
+<div class="chno">CHAPTER 01</div>
+<h2>Filtering core</h2>
+<div class="chfile">dspkit/core.py &middot; lfilter, fir_filter, convolve, freqz, sosfreqz, group_delay, tf2zpk, zpk2tf</div>
+
+<h3>Direct Form II Transposed</h3>
+<p><code>lfilter</code> is the template for every recursive structure in the package. It runs the general difference equation using K = max(M, N) state registers, which is the minimum possible (a canonical realisation).</p>
+<div class="eq"><span class="lbl">difference equation (a<sub>0</sub> = 1)</span>
+<i>y</i>[<i>n</i>] = &sum;<sub><i>k</i>=0</sub><sup><i>M</i></sup> <i>b<sub>k</sub></i> <i>x</i>[<i>n</i>&minus;<i>k</i>] &minus; &sum;<sub><i>k</i>=1</sub><sup><i>N</i></sup> <i>a<sub>k</sub></i> <i>y</i>[<i>n</i>&minus;<i>k</i>]</div>
+<div class="eq"><span class="lbl">DF2T state update, per sample</span>
+<i>y</i> = <i>b</i><sub>0</sub><i>x</i> + <i>s</i><sub>0</sub> &nbsp;&nbsp;&nbsp; <i>s<sub>i</sub></i> = <i>b</i><sub><i>i</i>+1</sub><i>x</i> &minus; <i>a</i><sub><i>i</i>+1</sub><i>y</i> + <i>s</i><sub><i>i</i>+1</sub> &nbsp; (<i>i</i> = 0 &hellip; <i>K</i>&minus;2) &nbsp;&nbsp;&nbsp; <i>s</i><sub><i>K</i>&minus;1</sub> = <i>b<sub>K</sub></i><i>x</i> &minus; <i>a<sub>K</sub></i><i>y</i></div>
+
+<div class="diagram" role="img" aria-label="DF2T biquad: input x feeds gains b0, b1, b2 into a column of adders; output y feeds back through -a1 and -a2; delay registers sit between adders">
+<svg viewBox="0 0 560 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker>
+    <marker id="ara" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="aha"/></marker>
+  </defs>
+  <text x="18" y="44">x[n]</text>
+  <path class="w" d="M56 40 H110 V240"/>
+  <circle cx="110" cy="40" r="3" class="ah"/><circle cx="110" cy="140" r="3" class="ah"/>
+  <path class="w" d="M110 40 H262" marker-end="url(#ar)"/><text class="g" x="172" y="32">b0</text>
+  <path class="w" d="M110 140 H262" marker-end="url(#ar)"/><text class="g" x="172" y="132">b1</text>
+  <path class="w" d="M110 240 H262" marker-end="url(#ar)"/><text class="g" x="172" y="232">b2</text>
+  <circle class="node" cx="280" cy="40" r="16"/><text x="274" y="45">+</text>
+  <circle class="node" cx="280" cy="140" r="16"/><text x="274" y="145">+</text>
+  <circle class="node" cx="280" cy="240" r="16"/><text x="274" y="245">+</text>
+  <rect class="reg" x="256" y="76" width="48" height="28" rx="3"/><text x="264" y="95">z⁻¹</text>
+  <rect class="reg" x="256" y="176" width="48" height="28" rx="3"/><text x="264" y="195">z⁻¹</text>
+  <path class="w" d="M280 224 V206" marker-end="url(#ar)"/><path class="w" d="M280 176 V158" marker-end="url(#ar)"/>
+  <path class="w" d="M280 124 V106" marker-end="url(#ar)"/><path class="w" d="M280 76 V58" marker-end="url(#ar)"/>
+  <text class="ga" x="312" y="118">s0</text><text class="ga" x="312" y="218">s1</text>
+  <path class="w" d="M296 40 H500" marker-end="url(#ar)"/><text x="508" y="44">y[n]</text>
+  <circle cx="440" cy="40" r="3" class="ah"/>
+  <path class="fb" d="M440 40 V240"/><circle cx="440" cy="140" r="3" class="aha"/>
+  <path class="fb" d="M440 140 H298" marker-end="url(#ara)"/><text class="ga" x="356" y="132">&#8722;a1</text>
+  <path class="fb" d="M440 240 H298" marker-end="url(#ara)"/><text class="ga" x="356" y="232">&#8722;a2</text>
+</svg>
+</div>
+<p>The two <code>z⁻¹</code> registers hold partial sums. In hardware the critical path from x to y is a single multiply and a single add, regardless of order, because the long adder chain is broken up by registers. This is the main reason transposed forms are the default for FIR filters on FPGAs.</p>
+
+<!--ANNOT dspkit/core.py::lfilter-->
+<ol class="notes">
+<li><code>normalize_tf</code> divides both vectors by <code>a[0]</code>. Every recurrence after this point assumes a<sub>0</sub> = 1.</li>
+<li><code>b</code> and <code>a</code> are zero-padded to the same length K+1, so one uniform update covers FIR (a = [1]) and all-pole (b = [b0]) filters alike.</li>
+<li><code>s</code> is the complete filter state. It is either zeros (filter at rest) or the caller's <code>zi</code>. Nothing else carries memory between samples.</li>
+<li><code>yn = b[0]*xn + s[0]</code>: the output depends on the current input and only <em>one</em> register.</li>
+<li><code>s[:-1] = b[1:K]*xn - a[1:K]*yn + s[1:]</code>: NumPy evaluates the whole right-hand side before it assigns anything, so every register updates "on the same clock edge". If you write this as a Python loop going downward over i, you overwrite <code>s[i+1]</code> before it has been read. That is the classic bug.</li>
+<li>The last register has no successor, so it gets no <code>+ s[K]</code> term.</li>
+<li>The function returns <code>s</code> as <code>zf</code>. Its layout matches SciPy's <code>zi</code>, so the two can be used interchangeably.</li>
+</ol>
+<!--/ANNOT-->
+
+<h3>Streaming FIR and the history convention</h3>
+<!--ANNOT dspkit/core.py::fir_filter-->
+<ol class="notes">
+<li>The state is the last M inputs, <strong>newest first</strong>. This is the contents of an M-register tapped delay line.</li>
+<li><code>xe</code> = history (oldest first) followed by the new block, so <code>xe[M+n] == x[n]</code> and tap k reads <code>xe[M+n-k]</code>.</li>
+<li>The loop runs over taps, not samples. Each iteration is one vector multiply-add of a delayed copy of the input, so the cost is O(N&middot;L) with only N NumPy calls.</li>
+<li><code>zf = xe[::-1][:M]</code> returns the M most recent inputs in the same order the function expects for <code>zi</code>.</li>
+</ol>
+<!--/ANNOT-->
+
+<h3>Frequency response and group delay</h3>
+<p><code>freqz</code> evaluates H on the unit circle directly. It builds the matrix E[i,k] = e<sup>&minus;j&omega;<sub>i</sub>k</sup> and computes two matrix&ndash;vector products. That costs O(F&middot;N), which is fine for analysis and is exact at any frequency you choose, with no FFT grid. <code>group_delay</code> avoids differentiating the unwrapped phase numerically by using an identity:</p>
+<div class="eq"><span class="lbl">group delay of a polynomial P(z) = &sum; p<sub>k</sub> z<sup>&minus;k</sup></span>
+&tau;<sub><i>P</i></sub>(&omega;) = Re{ &sum; <i>k p<sub>k</sub></i> e<sup>&minus;j&omega;k</sup> / &sum; <i>p<sub>k</sub></i> e<sup>&minus;j&omega;k</sup> } &nbsp;&nbsp;&nbsp;&nbsp; &tau;<sub><i>H</i></sub> = &tau;<sub><i>B</i></sub> &minus; &tau;<sub><i>A</i></sub></div>
+<!--ANNOT dspkit/core.py::group_delay-->
+<ol class="notes">
+<li><code>tau(p)</code> is the identity above. <code>k * p</code> is the coefficient vector of &minus;z&middot;dP/dz.</li>
+<li>Where P(e<sup>j&omega;</sup>) = 0 (a zero on the unit circle, e.g. Butterworth zeros at z = &minus;1), the ratio is 0/0. <code>errstate</code> suppresses the warning and the caller has to mask those frequencies. The tests and the example plots do this.</li>
+</ol>
+<!--/ANNOT-->
+
+<div class="pitfall"><b class="tag">Pitfalls</b><ul>
+<li><code>zpk2tf</code> with fewer zeros than poles: dspkit prefixes <code>b</code> with zeros to keep the exact delay z<sup>&minus;d</sup>. <code>scipy.signal.zpk2tf</code> does not, so the magnitude is the same but the phase differs by d samples.</li>
+<li>The Python-level loops run at about 1 &micro;s per sample per section. Use them to <em>learn and verify</em>; use <code>scipy.signal</code> for real-time throughput in stage 2.</li>
+</ul></div>
+</section>
+
+<!-- ============================================================ 02 -->
+<section class="ch" id="fir">
+<div class="chno">CHAPTER 02</div>
+<h2>FIR design</h2>
+<div class="chfile">dspkit/fir.py &middot; get_window, firwin, kaiserord, freq_sampling, firls, remez</div>
+
+<p>The module has five design methods, ordered from heuristic to optimal. All of them return symmetric taps (linear phase). The test case used throughout this chapter is: <b>fs = 48 kHz, passband 0&ndash;6 kHz, stopband 8&ndash;24 kHz, &ge; 60 dB attenuation, &le; 0.1 dB passband ripple</b>.</p>
+<div class="tbl"><table>
+<tr><th>Type</th><th>N</th><th>Symmetry</th><th>Forced zeros</th><th>Use</th></tr>
+<tr><td>I</td><td>odd</td><td>symmetric</td><td>none</td><td>any response; required for highpass and bandstop</td></tr>
+<tr><td>II</td><td>even</td><td>symmetric</td><td>H(&pi;) = 0</td><td>lowpass, bandpass</td></tr>
+<tr><td>III</td><td>odd</td><td>antisymmetric</td><td>H(0) = H(&pi;) = 0</td><td>Hilbert transformer, differentiator</td></tr>
+<tr><td>IV</td><td>even</td><td>antisymmetric</td><td>H(0) = 0</td><td>differentiator</td></tr>
+</table></div>
+
+<h3>1 &middot; Window method</h3>
+<p>The ideal multiband response is a sum of rectangular passbands [l, r] (normalised to Nyquist). Its inverse DTFT is a difference of sincs, centred at m = n &minus; (N&minus;1)/2 so the filter is causal and linear-phase.</p>
+<div class="eq"><i>h</i><sub>ideal</sub>[<i>m</i>] = &sum;<sub>bands</sub> [ <i>r</i> sinc(<i>r m</i>) &minus; <i>l</i> sinc(<i>l m</i>) ], &nbsp;&nbsp; sinc(<i>x</i>) = sin(&pi;<i>x</i>)/(&pi;<i>x</i>) &nbsp;&nbsp;&nbsp;&nbsp; <i>h</i>[<i>n</i>] = <i>h</i><sub>ideal</sub>[<i>m</i>] &middot; <i>w</i>[<i>n</i>]</div>
+<!--ANNOT dspkit/fir.py::firwin-->
+<ol class="notes">
+<li>Cutoffs are divided by <code>fs/2</code>, so all the internal maths uses Nyquist = 1.</li>
+<li><code>edges = [0, c0, c1, &hellip;, 1]</code>. Alternate intervals are passbands, and <code>pass_zero</code> chooses whether the first one is a passband. This one rule covers lowpass, highpass, bandpass, bandstop and multiband filters.</li>
+<li>A passband that reaches Nyquist with even N would be Type II, which has a forced zero at &pi;, so the function rejects it.</li>
+<li><code>m</code> is centred, so <code>h</code> is exactly symmetric. Each passband adds its sinc difference.</li>
+<li>Scaling: for a symmetric FIR, |H(f<sub>0</sub>)| = |&sum; h[n] cos(&pi; m f<sub>0</sub>)| because the sine terms cancel in pairs. The function normalises gain to 1 at DC, at Nyquist, or at the centre of the first passband, which matches SciPy's <code>scale=True</code>.</li>
+</ol>
+<!--/ANNOT-->
+
+<div class="tbl"><table>
+<tr><th>Window</th><th class="num">Main-lobe width</th><th class="num">Peak sidelobe</th><th class="num">Min. stopband atten.</th></tr>
+<tr><td>Rectangular</td><td class="num">4&pi;/N</td><td class="num">&minus;13 dB</td><td class="num">21 dB</td></tr>
+<tr><td>Hann</td><td class="num">8&pi;/N</td><td class="num">&minus;31 dB</td><td class="num">44 dB</td></tr>
+<tr><td>Hamming</td><td class="num">8&pi;/N</td><td class="num">&minus;41 dB</td><td class="num">53 dB</td></tr>
+<tr><td>Blackman</td><td class="num">12&pi;/N</td><td class="num">&minus;57 dB</td><td class="num">74 dB</td></tr>
+<tr><td>Kaiser (&beta;)</td><td class="num" colspan="3">tunable: &beta; trades main-lobe width against attenuation</td></tr>
+</table></div>
+<!--FIG 01_windows.png|<b>Fixed window, fixed N = 81.</b> The window alone decides the stopband floor. Transition width scales with main-lobe width divided by N, so a better floor costs taps.-->
+
+<h3>2 &middot; Kaiser design formulas</h3>
+<div class="eq">&beta; = 0.1102(<i>A</i>&minus;8.7) &nbsp;(<i>A</i> &gt; 50), &nbsp; 0.5842(<i>A</i>&minus;21)<sup>0.4</sup> + 0.07886(<i>A</i>&minus;21) &nbsp;(21 &lt; <i>A</i> &le; 50) &nbsp;&nbsp;&nbsp;&nbsp; <i>N</i> &minus; 1 = (<i>A</i> &minus; 7.95) / (2.285 &Delta;&omega;)</div>
+<p><code>kaiserord(60, 2000, fs=48000)</code> returns 89 taps with &beta; = 5.65. Measured, the design reaches <b>59.2 dB</b>, which misses the 60 dB target. The formula is an empirical fit, so always measure the result and add taps if it falls short.</p>
+<!--ANNOT dspkit/fir.py::bessel_i0-->
+<ol class="notes">
+<li>Power series for I<sub>0</sub>. Each term is the previous term times (x/2)<sup>2</sup>/k<sup>2</sup>, which avoids computing factorials and overflowing.</li>
+<li>40 terms are enough for the arguments a Kaiser window uses (&beta; &lt; 15). For large arguments use the asymptotic expansion instead.</li>
+</ol>
+<!--/ANNOT-->
+
+<h3>3 &middot; Frequency sampling</h3>
+<p>You specify the amplitude at N equispaced frequencies &omega;<sub>k</sub> = 2&pi;k/N. Attaching linear phase and taking the inverse DFT of a real, symmetric amplitude gives:</p>
+<div class="eq"><i>h</i>[<i>n</i>] = (1/<i>N</i>) [ <i>A</i><sub>0</sub> + 2 &sum;<sub><i>k</i>=1</sub><sup><i>L</i></sup> <i>A<sub>k</sub></i> cos(&omega;<sub><i>k</i></sub>(<i>n</i> &minus; <i>L</i>)) ], &nbsp;&nbsp; <i>N</i> = 2<i>L</i>+1</div>
+<p>The response passes through the samples exactly and ripples between them. One intermediate "transition sample" (T<sub>1</sub> &asymp; 0.39) lowers the first sidelobe by about 20 dB. <code>remez</code> also uses this function as its last step, converting the optimal amplitude into taps.</p>
+<!--FIG 01_freq_sampling.png|<b>Frequency sampling, N = 41.</b> The circles are the specified samples. Adding a single transition sample changes the sidelobe structure substantially.-->
+
+<h3>4 &middot; Weighted least squares</h3>
+<p>Write the Type I amplitude as a cosine series and fit it to the desired response on a dense grid. Least squares is linear, so the solution is a single solve.</p>
+<div class="eq"><i>A</i>(&omega;) = &sum;<sub><i>k</i>=0</sub><sup><i>L</i></sup> <i>a<sub>k</sub></i> cos(<i>k</i>&omega;) &nbsp;&nbsp;&nbsp; min &sum;<sub><i>i</i></sub> <i>W<sub>i</sub></i> (<i>A</i>(&omega;<sub><i>i</i></sub>) &minus; <i>D<sub>i</sub></i>)<sup>2</sup> &nbsp;&rArr;&nbsp; (<b>C</b><sup>T</sup><b>W</b><b>C</b>) <b>a</b> = <b>C</b><sup>T</sup><b>W</b><b>D</b>, &nbsp; <b>C</b><sub><i>ik</i></sub> = cos(<i>k</i>&omega;<sub><i>i</i></sub>)</div>
+<!--ANNOT dspkit/fir.py::firls_grid-->
+<ol class="notes">
+<li><code>C</code> is the design matrix, with one row per grid frequency and one column per cosine.</li>
+<li>Multiplying each row and the target by &radic;W<sub>i</sub> converts weighted LS into ordinary LS. <code>lstsq</code> uses SVD, which is better conditioned than forming C<sup>T</sup>WC.</li>
+<li>Coefficients to taps: <code>h[L] = a0</code> and <code>h[L&plusmn;k] = a_k/2</code>, because a<sub>k</sub> cos(k&omega;) = (a<sub>k</sub>/2)(e<sup>jk&omega;</sup> + e<sup>&minus;jk&omega;</sup>).</li>
+<li>The grid accepts any desired D. <code>multirate.cic_compensator</code> reuses this function with D = 1/|H<sub>CIC</sub>|.</li>
+</ol>
+<!--/ANNOT-->
+
+<h3>5 &middot; Parks&ndash;McClellan (Remez exchange)</h3>
+<p>Remez minimises the maximum weighted error. By the alternation theorem, the optimum has at least L+2 frequencies where the error reaches &plusmn;&delta; with alternating sign. The algorithm repeatedly guesses those frequencies, solves for &delta;, and moves the guesses to the actual error peaks.</p>
+<div class="eq"><span class="lbl">closed-form ripple for a trial extremal set {x<sub>k</sub> = cos &omega;<sub>k</sub>}</span>
+&delta; = &sum; <i>b<sub>k</sub> D<sub>k</sub></i> / &sum; <i>b<sub>k</sub></i>(&minus;1)<sup><i>k</i></sup>/<i>W<sub>k</sub></i>, &nbsp;&nbsp; <i>b<sub>k</sub></i> = 1 / &prod;<sub><i>i</i>&ne;<i>k</i></sub>(<i>x<sub>k</sub></i> &minus; <i>x<sub>i</sub></i>) &nbsp;&nbsp;&nbsp; <i>C<sub>k</sub></i> = <i>D<sub>k</sub></i> &minus; (&minus;1)<sup><i>k</i></sup>&delta;/<i>W<sub>k</sub></i></div>
+<!--ANNOT dspkit/fir.py::remez-->
+<ol class="notes">
+<li><b>Grid.</b> <code>_band_grid</code> samples only the bands; transition bands are "don't care" regions. Grid spacing is 1/(16N). Using x = cos &omega; turns A(&omega;) into an ordinary polynomial of degree L in x.</li>
+<li><b>Initial guess.</b> L+2 indices equally spaced over the grid.</li>
+<li><b>Solve &delta;.</b> <code>_bary_weights</code> gives b<sub>k</sub>. The &delta; formula is the closed-form solution of the (L+2)&times;(L+2) system, so no matrix is ever formed.</li>
+<li><b>Interpolate.</b> A polynomial of degree L is fixed by L+1 points, so the last extremal is dropped and A is evaluated on the whole grid with barycentric Lagrange (<code>_bary_eval</code>). This is O(grid &middot; L) and numerically stable.</li>
+<li><b>Exchange.</b> <code>_find_extrema</code> collects local extrema of E within each band, with band edges always counted. It keeps the larger of any same-sign neighbours so the signs alternate, then trims from the ends down to L+2.</li>
+<li><b>Stop</b> when max|E| equals |&delta;| to 1 ppm, or when the extremal set stops changing. This usually takes 6 to 12 iterations.</li>
+<li><b>Taps.</b> Sample A at &omega;<sub>m</sub> = 2&pi;m/N and call <code>freq_sampling</code>, which is an exact inverse for a degree-L cosine series.</li>
+</ol>
+<!--/ANNOT-->
+<div class="results">
+  <div><div class="v">89</div><div class="k">Kaiser taps. Formula-based; reaches 59.2 dB, so it misses the spec</div></div>
+  <div><div class="v">85</div><div class="k">least-squares taps, minimum length that meets the spec</div></div>
+  <div><div class="v">71</div><div class="k">Remez taps, minimum length that meets the spec</div></div>
+  <div><div class="v">35.0</div><div class="k">Remez group delay in samples, constant = (N&minus;1)/2</div></div>
+</div>
+<!--FIG 01_methods.png|<b>One spec, three methods</b> (stopband weight 30 for LS and Remez). Remez spreads its error as equal ripples across the whole band, which is why it needs the fewest taps. LS puts its error where it is cheapest, so it ripples less on average but needs more taps to bound the worst case.-->
+
+<div class="pitfall"><b class="tag">Pitfalls</b><ul>
+<li>Band edges are in units of <code>fs</code>. With the default <code>fs=2</code>, 1.0 is Nyquist. With SciPy's <code>remez</code> default (<code>fs=1</code>), Nyquist is 0.5.</li>
+<li>Remez fails to converge, or rings badly in the transition band, when the transition is too narrow for N, when N is above about 500 (barycentric weights underflow), or when the bands are so wide that no don't-care region is left.</li>
+<li>Transition bands are unconstrained. Always plot the full response, not just the bands.</li>
+</ul></div>
+</section>
+
+<!-- ============================================================ 03 -->
+<section class="ch" id="iir">
+<div class="chno">CHAPTER 03</div>
+<h2>IIR design</h2>
+<div class="chfile">dspkit/iir.py &middot; buttap, cheb1ap, cheb2ap, lp2*_zpk, bilinear_zpk, iirfilter, zpk2sos, sosfilt, buttord</div>
+<p>The design stays in zero&ndash;pole&ndash;gain form from the analog prototype until the final biquads. Converting to a polynomial at any intermediate step would throw away the root accuracy that high-order, narrow-band filters need.</p>
+<div class="flow">
+  <div class="st"><b>Prototype</b><span>Analog lowpass, &Omega;<sub>c</sub> = 1</span></div>
+  <div class="st"><b>Pre-warp</b><span>&Omega; = 2f<sub>s</sub>&prime; tan(&pi;f/f<sub>s</sub>)</span></div>
+  <div class="st"><b>Transform</b><span>lp &rarr; lp / hp / bp / bs on roots</span></div>
+  <div class="st"><b>Bilinear</b><span>s-plane roots &rarr; z-plane roots</span></div>
+  <div class="st"><b>Pair</b><span>roots &rarr; biquads (<code>zpk2sos</code>)</span></div>
+  <div class="st"><b>Run</b><span>cascade of DF2T biquads</span></div>
+</div>
+
+<h3>Analog prototypes</h3>
+<div class="tbl"><table>
+<tr><th>Prototype</th><th>Poles</th><th>Zeros</th><th>Gain</th></tr>
+<tr><td>Butterworth</td><td>e<sup>j&pi;(2k+N&minus;1)/(2N)</sup>, k = 1&hellip;N, on the unit circle</td><td>none</td><td>1</td></tr>
+<tr><td>Chebyshev I (rp dB)</td><td>&minus;sinh&mu; sin&theta;<sub>k</sub> + j cosh&mu; cos&theta;<sub>k</sub>, on an ellipse; &epsilon;<sup>2</sup> = 10<sup>rp/10</sup>&minus;1, &mu; = asinh(1/&epsilon;)/N</td><td>none</td><td>&prod;(&minus;p), divided by &radic;(1+&epsilon;<sup>2</sup>) when N is even</td></tr>
+<tr><td>Chebyshev II (rs dB)</td><td>1/q<sub>k</sub>, where q<sub>k</sub> are Chebyshev-I-style poles with &epsilon; = 1/&radic;(10<sup>rs/10</sup>&minus;1)</td><td>j / cos&theta;<sub>k</sub>, on the j&Omega; axis</td><td>&prod;(&minus;p) / &prod;(&minus;z)</td></tr>
+</table></div>
+<p>Here &theta;<sub>k</sub> = (2k&minus;1)&pi;/(2N). Chebyshev II comes from Chebyshev I by the substitution &Omega; &rarr; 1/&Omega;, which swaps where the ripple sits. Its stopband edge, not its &minus;3 dB point, is at 1 rad/s.</p>
+
+<h3>Frequency transforms on roots</h3>
+<div class="tbl"><table>
+<tr><th>Target</th><th>Substitution</th><th>Effect on each root r</th><th>Excess d = #p &minus; #z</th></tr>
+<tr><td>lowpass</td><td>s &rarr; s/&omega;<sub>0</sub></td><td>r &rarr; &omega;<sub>0</sub> r</td><td>k &times; &omega;<sub>0</sub><sup>d</sup></td></tr>
+<tr><td>highpass</td><td>s &rarr; &omega;<sub>0</sub>/s</td><td>r &rarr; &omega;<sub>0</sub>/r</td><td>d zeros at s = 0</td></tr>
+<tr><td>bandpass</td><td>s &rarr; (s<sup>2</sup>+&omega;<sub>0</sub><sup>2</sup>)/(B s)</td><td>r &rarr; rB/2 &plusmn; &radic;((rB/2)<sup>2</sup> &minus; &omega;<sub>0</sub><sup>2</sup>)</td><td>d zeros at s = 0</td></tr>
+<tr><td>bandstop</td><td>s &rarr; B s/(s<sup>2</sup>+&omega;<sub>0</sub><sup>2</sup>)</td><td>roots of r s<sup>2</sup> &minus; B s + r&omega;<sub>0</sub><sup>2</sup></td><td>d zero pairs at &plusmn;j&omega;<sub>0</sub> (the notch)</td></tr>
+</table></div>
+<p>Bandpass and bandstop filters double the order. <code>butter(4, [.2, .4], 'bandpass')</code> is 8th order. &omega;<sub>0</sub> is the <em>geometric</em> centre &radic;(&Omega;<sub>1</sub>&Omega;<sub>2</sub>) of the pre-warped edges.</p>
+
+<h3>Bilinear transform</h3>
+<div class="eq">s = 2<i>f<sub>s</sub></i> (z &minus; 1)/(z + 1) &nbsp;&hArr;&nbsp; z = (2<i>f<sub>s</sub></i> + s)/(2<i>f<sub>s</sub></i> &minus; s) &nbsp;&nbsp;&nbsp;&nbsp; &Omega; = 2<i>f<sub>s</sub></i> tan(&omega;/2)</div>
+<!--ANNOT dspkit/iir.py::bilinear_zpk-->
+<ol class="notes">
+<li>Each finite root maps by z = (2f<sub>s</sub>+s)/(2f<sub>s</sub>&minus;s). The left half-plane maps inside the unit circle, so stability is preserved.</li>
+<li>The d zeros at s = &infin; land at z = &minus;1 (Nyquist). This is why every bilinear lowpass has an exact null at f<sub>s</sub>/2.</li>
+<li>The gain is fixed by matching the leading coefficients: k<sub>d</sub> = k &prod;(2f<sub>s</sub>&minus;z)/&prod;(2f<sub>s</sub>&minus;p).</li>
+</ol>
+<!--/ANNOT-->
+<!--FIG 02_warping.png|<b>Frequency warping.</b> The bilinear map compresses the whole analog axis into [0, &pi;). Pre-warping the edges with tan() makes each specified edge land exactly where it was asked for.-->
+
+<!--ANNOT dspkit/iir.py::iirfilter-->
+<ol class="notes">
+<li>The edges are normalised to Nyquist. The internal bilinear rate is fixed at f<sub>s</sub>&prime; = 2 (Nyquist = 1), so <code>warped = 4 tan(&pi;W<sub>n</sub>/2)</code>. The final digital filter does not depend on f<sub>s</sub>&prime;, because it cancels between the pre-warp and the transform.</li>
+<li>Bandpass and bandstop take bandwidth = the difference of the warped edges and centre = their geometric mean.</li>
+<li>The output is <code>'sos'</code> by default. <code>'ba'</code> exists only for teaching; see Part B of <code>ex02</code>.</li>
+</ol>
+<!--/ANNOT-->
+<!--FIG 02_prototypes.png|<b>Order 5, f<sub>c</sub> = 0.25.</b> Chebyshev I trades passband ripple for a steeper skirt. Chebyshev II places zeros on the unit circle to get an equiripple stopband. The group-delay peaks near the band edge come from poles close to the unit circle.-->
+
+<h3>Second-order sections</h3>
+<!--ANNOT dspkit/iir.py::zpk2sos-->
+<ol class="notes">
+<li><code>to_groups</code> splits the roots into conjugate pairs and pairs of reals. A single leftover real root is paired with a root at the origin, so <code>a2 = 0</code> or <code>b2 = 0</code>.</li>
+<li>Pole pairs are sorted so the one <b>closest to the unit circle</b> (highest Q) comes first, and each takes the <b>nearest zero pair</b>. Putting a resonant peak in the same section as the zeros that partly cancel it limits that section's gain.</li>
+<li>The order is then reversed so the highest-Q section is last. Noise injected early would otherwise be amplified by the resonant sections that follow it, and in fixed point the peaky section is also where overflow risk is highest.</li>
+<li>The overall gain <code>k</code> goes into section 0's numerator. In fixed point, spread it across the sections instead (exercise 10).</li>
+</ol>
+<!--/ANNOT-->
+<!--ANNOT dspkit/iir.py::sosfilt-->
+<ol class="notes">
+<li>Section i fully processes the block before section i+1 starts. This is valid because each section is LTI, and the hardware pipeline computes the same result.</li>
+<li>The inner loop is the 3-line DF2T biquad: 5 multiplies and 4 adds per sample.</li>
+<li><code>zf</code> has shape <code>(n_sections, 2)</code>, the same layout as SciPy.</li>
+</ol>
+<!--/ANNOT-->
+
+<h3>Why SOS: coefficient sensitivity</h3>
+<p><code>ex02</code> designs an 8th-order Butterworth bandpass from 0.10 to 0.12 and rounds only the <em>feedback</em> coefficients to a 2<sup>&minus;16</sup> grid. Those coefficients decide where the poles are.</p>
+<div class="results">
+  <div><div class="v">0.98901</div><div class="k">largest |pole|, ideal design</div></div>
+  <div><div class="v">1.0431</div><div class="k">largest |pole|, direct form with a[] rounded. Unstable.</div></div>
+  <div><div class="v">0.98901</div><div class="k">largest |pole|, SOS with a1 and a2 rounded. Unchanged to 7 digits.</div></div>
+  <div><div class="v">56.3</div><div class="k">largest |a<sub>k</sub>| of the 8th-order polynomial. A biquad has |a1| &lt; 2.</div></div>
+</div>
+<!--FIG 02_sos_vs_direct.png|<b>Same rounding, two realisations.</b> A root of a high-order polynomial with clustered roots moves by an amount proportional to the coefficient error divided by the product of its distances to the other roots, and those distances are tiny when poles cluster. A biquad has only one partner root to be close to.-->
+
+<div class="pitfall"><b class="tag">Pitfalls</b><ul>
+<li>Rounding <code>b</code> of the direct form in the same experiment sets it to <em>zero</em>, because the gain k &asymp; 10<sup>&minus;8</sup>. Overall gain has to be distributed before quantisation.</li>
+<li>The DC gain of an even-order Chebyshev I filter is 1/&radic;(1+&epsilon;<sup>2</sup>), not 1.</li>
+<li>Specify band edges in the units of the <code>fs</code> you pass. Mixing Hz edges with the default <code>fs=2</code> raises a ValueError, which is better than a silent mistake.</li>
+</ul></div>
+</section>
+
+<!-- ============================================================ 04 -->
+<section class="ch" id="fft">
+<div class="chno">CHAPTER 04</div>
+<h2>FFT and fast convolution</h2>
+<div class="chfile">dspkit/fft.py &middot; dft, fft_recursive, fft, ifft, bit_reverse_indices, rfft_packed, goertzel, fft_convolve, overlap_add, overlap_save, stft</div>
+
+<h3>Radix-2 decimation in time</h3>
+<div class="eq"><i>X</i>[<i>k</i>] = <i>E</i>[<i>k</i>] + <i>W<sub>N</sub><sup>k</sup></i> <i>O</i>[<i>k</i>], &nbsp;&nbsp; <i>X</i>[<i>k</i>+<i>N</i>/2] = <i>E</i>[<i>k</i>] &minus; <i>W<sub>N</sub><sup>k</sup></i> <i>O</i>[<i>k</i>], &nbsp;&nbsp; <i>W<sub>N</sub></i> = e<sup>&minus;j2&pi;/N</sup></div>
+<!--ANNOT dspkit/fft.py::fft_recursive-->
+<ol class="notes">
+<li>E and O are the half-length DFTs of the even-indexed and odd-indexed samples. The recursion ends at N = 1, where the DFT is the identity.</li>
+<li><code>t = W * O</code> is computed once and used twice. That shared product is the butterfly, and it is why there are only N/2 multiplies per stage.</li>
+</ol>
+<!--/ANNOT-->
+<p>The iterative version is the structure used in hardware and on microcontrollers: permute the input once into bit-reversed order, then run log<sub>2</sub>N stages of butterflies in place.</p>
+<!--ANNOT dspkit/fft.py::fft-->
+<ol class="notes">
+<li><code>bit_reverse_indices</code>: unrolling the recursion fully leaves the input in bit-reversed order. For N = 8 that is [0, 4, 2, 6, 1, 5, 3, 7].</li>
+<li>Stage loop: span <code>m</code> = 2, 4, &hellip;, N. In each group of m elements, element j pairs with element j + m/2 using twiddle W<sub>m</sub><sup>j</sup>.</li>
+<li><code>X.reshape(-1, m)</code> is a <em>view</em>, one row per group, so writing to <code>Xg</code> writes to <code>X</code>. All groups of a stage are handled in one vectorised step.</li>
+<li><code>a</code> must be <code>.copy()</code>'d: the top half is overwritten with <code>a + b</code> before the bottom half needs the old <code>a</code>. In hardware this is the butterfly's input register.</li>
+<li>Cost: (N/2) log<sub>2</sub>N complex multiplies, some of them trivial (W = 1, &minus;j). Radix-4 removes more of those (exercise 13).</li>
+</ol>
+<!--/ANNOT-->
+<!--FIG 03_fft_timing.png|<b>Same complexity, different constants.</b> At N = 4096 the vectorised iterative FFT is about 15&times; faster than the recursive one, and pocketfft (C, mixed radix, cache-aware) is about 40&times; faster again. The O(N<sup>2</sup>) DFT is only useful as a reference.-->
+
+<h3>Real-input FFT from one half-length complex FFT</h3>
+<div class="eq"><i>z</i>[<i>n</i>] = <i>x</i>[2<i>n</i>] + j<i>x</i>[2<i>n</i>+1] &nbsp;&rarr;&nbsp; <i>Z</i> = FFT<sub><i>N</i>/2</sub>(<i>z</i>) &nbsp;&nbsp; <i>E</i>[<i>k</i>] = (<i>Z</i>[<i>k</i>] + <i>Z</i>*[<i>N</i>/2&minus;<i>k</i>])/2, &nbsp; <i>O</i>[<i>k</i>] = (<i>Z</i>[<i>k</i>] &minus; <i>Z</i>*[<i>N</i>/2&minus;<i>k</i>])/2j</div>
+<p>This halves the cost for real signals such as audio, images and real ADC streams. <code>stft</code> is built on it.</p>
+
+<h3>Goertzel: one bin, one real multiply per sample</h3>
+<!--ANNOT dspkit/fft.py::goertzel-->
+<ol class="notes">
+<li>The filter 1/(1 &minus; e<sup>j&omega;</sup>z<sup>&minus;1</sup>) sampled at n = N&minus;1 gives e<sup>j&omega;(N&minus;1)</sup>X[k]. Multiplying numerator and denominator by the conjugate pole factor makes the recursion <em>real</em>.</li>
+<li>The per-sample loop is <code>s0 = x + c*s1 - s2</code>, with c = 2cos&omega; precomputed: a single multiply.</li>
+<li>The complex correction runs once, after the last sample. For detection, use the power form, which needs no complex arithmetic.</li>
+<li><code>k</code> may be non-integer, so you can tune each bin exactly to a DTMF frequency.</li>
+</ol>
+<!--/ANNOT-->
+<!--FIG 03_dtmf_goertzel.png|<b>DTMF digit "7" in noise</b> (SNR about 6 dB), N = 205 at 8 kHz. 8 Goertzel bins cost 205 &times; 8 real multiplies; a 256-point FFT costs about 4 &times; 1024.-->
+
+<h3>Block convolution</h3>
+<div class="tbl"><table>
+<tr><th></th><th>Overlap-add</th><th>Overlap-save</th></tr>
+<tr><td>Input blocks</td><td>non-overlapping, length B = N<sub>fft</sub> &minus; M + 1, zero-padded</td><td>overlap by M&minus;1, length N<sub>fft</sub></td></tr>
+<tr><td>Per block</td><td>linear convolution (no aliasing)</td><td>circular convolution; the first M&minus;1 outputs are aliased</td></tr>
+<tr><td>Combine</td><td><b>add</b> the overlapping M&minus;1 tails</td><td><b>discard</b> M&minus;1, keep B</td></tr>
+<tr><td>Streaming</td><td>needs an output accumulator</td><td>sliding input buffer, no additions, simpler</td></tr>
+</table></div>
+<!--ANNOT dspkit/fft.py::overlap_save-->
+<ol class="notes">
+<li><code>H</code> is computed once. Every block reuses it, which is the whole efficiency gain.</li>
+<li><code>xp</code> is prefixed with M&minus;1 zeros: the history before t = 0.</li>
+<li><code>yb[M - 1:]</code> discards the wrap-around region where circular and linear convolution differ.</li>
+</ol>
+<!--/ANNOT-->
+<div class="tbl"><table>
+<tr><th>N<sub>fft</sub> (M = 129 taps)</th><th class="num">Block B</th><th class="num">Real mult / output sample</th></tr>
+<tr><td>direct FIR</td><td class="num">&ndash;</td><td class="num">129</td></tr>
+<tr><td>256</td><td class="num">128</td><td class="num">72.0</td></tr>
+<tr><td>512</td><td class="num">384</td><td class="num">53.3</td></tr>
+<tr><td>1024</td><td class="num">896</td><td class="num">50.3</td></tr>
+<tr><td>4096</td><td class="num">3968</td><td class="num">53.7</td></tr>
+</table></div>
+<p>The optimum N<sub>fft</sub> is about 4M to 8M. Beyond that the log factor grows faster than the block amortisation helps. The latency is one block, which matters in stage 2.</p>
+</section>
+
+<!-- ============================================================ 05 -->
+<section class="ch" id="fixed">
+<div class="chno">CHAPTER 05</div>
+<h2>Fixed point, bit-true</h2>
+<div class="chfile">dspkit/fixed.py &middot; QFormat, quantize, round_shift, handle_overflow, requantize, fir_fixed, fir_acc_bits, biquad_fixed, sos_fixed, sqnr_db, write_mem</div>
+<p>This module is the reference model for stage 3. Data is stored as integer codes in int64 and every width is declared. Because the arithmetic here is exactly what the hardware does, your HDL output must match it <em>bit for bit</em>.</p>
+
+<div class="tbl"><table>
+<tr><th>Operation</th><th>Result format</th><th>Hardware view</th></tr>
+<tr><td>Q(m<sub>1</sub>,n<sub>1</sub>) &times; Q(m<sub>2</sub>,n<sub>2</sub>)</td><td>Q(m<sub>1</sub>+m<sub>2</sub>, n<sub>1</sub>+n<sub>2</sub>)</td><td>full product, e.g. a DSP48 25&times;18 &rarr; 43 bits</td></tr>
+<tr><td>sum of N products</td><td>+ &lceil;log<sub>2</sub>N&rceil; integer bits (worst case)</td><td>accumulator guard bits</td></tr>
+<tr><td>requantise</td><td>shift right by n<sub>in</sub> &minus; n<sub>out</sub>, then round, then saturate or wrap</td><td>the only place error is introduced; choose it deliberately</td></tr>
+</table></div>
+
+<h3>Rounding is a choice of bias</h3>
+<!--ANNOT dspkit/fixed.py::round_shift-->
+<ol class="notes">
+<li><code>v &gt;&gt; s</code> on signed NumPy ints is an <em>arithmetic</em> shift, i.e. floor division by 2<sup>s</sup>. Dropping wires in hardware does exactly the same thing.</li>
+<li><code>'round'</code> adds half an LSB of the <em>output</em> (2<sup>s&minus;1</sup>) before flooring. In hardware this is one adder, or the rounding constant preloaded into the DSP48 accumulator.</li>
+<li><code>'convergent'</code> checks the discarded bits for the exact halfway case (<code>rem == half</code>) and rounds to the even neighbour.</li>
+<li><code>'trunc'</code> rounds toward zero by negating, shifting and negating back.</li>
+</ol>
+<!--/ANNOT-->
+<div class="tbl"><table>
+<tr><th>Mode, requantise by 8 bits (200k samples)</th><th class="num">Mean error (LSB)</th><th class="num">RMS error (LSB)</th><th>Cost</th></tr>
+<tr><td><code>floor</code></td><td class="num">&minus;0.498</td><td class="num">0.289</td><td>free</td></tr>
+<tr><td><code>trunc</code></td><td class="num">+0.000</td><td class="num">0.575</td><td>sign-dependent; the error is correlated with the signal</td></tr>
+<tr><td><code>round</code></td><td class="num">+0.002</td><td class="num">0.288</td><td>one add</td></tr>
+<tr><td><code>convergent</code></td><td class="num">+0.000</td><td class="num">0.288</td><td>add plus a halfway check</td></tr>
+</table></div>
+<p>0.289 = 1/&radic;12, the RMS of a uniform error over one LSB. The &minus;0.5 LSB bias of floor is a DC offset. After an integrator or a high-gain IIR stage it becomes a large DC error.</p>
+
+<h3>Bit-true FIR and accumulator sizing</h3>
+<!--ANNOT dspkit/fixed.py::fir_fixed-->
+<ol class="notes">
+<li>The products <code>hk * x</code> are exact in int64: 16&times;16 bits = 32 bits, far from the 63-bit limit.</li>
+<li>If <code>acc_bits</code> is given, the accumulator is <b>wrapped</b> to that width after every add, which models a finite hardware register.</li>
+<li>Wrapping is harmless when the <em>final</em> sum fits. Two's-complement addition is arithmetic mod 2<sup>W</sup>, so intermediate overflows cancel out. The test <code>test_fir_fixed_wrap_accumulator_still_exact</code> proves this.</li>
+<li>There is a single requantisation at the end, from n<sub>x</sub>+n<sub>h</sub> fractional bits to the output format. That is the only rounding point in the filter.</li>
+</ol>
+<!--/ANNOT-->
+<div class="eq"><span class="lbl">exact worst-case accumulator width (fir_acc_bits)</span>
+max|acc| = 2<sup><i>W<sub>x</sub></i>&minus;1</sup> &sum;|<i>h<sub>k</sub></i>| &nbsp;&rArr;&nbsp; <i>W</i><sub>acc</sub> = &lceil;log<sub>2</sub>(2<sup><i>W<sub>x</sub></i>&minus;1</sup>&sum;|<i>h<sub>k</sub></i>|)&rceil; + 1</div>
+<div class="results">
+  <div><div class="v">32 bits</div><div class="k">exact accumulator for a 31-tap Q15 FIR</div></div>
+  <div><div class="v">37 bits</div><div class="k">crude bound W<sub>x</sub> + W<sub>h</sub> + &lceil;log<sub>2</sub>N&rceil;</div></div>
+  <div><div class="v">82.9 dB</div><div class="k">SQNR of the 16-bit FIR against float</div></div>
+</div>
+<!--FIG 04_coeff_wordlength.png|<b>Coefficient word length sets the stopband floor.</b> Quantising taps adds an error filter with roughly flat spectrum, about 6 dB per bit (29 dB at 8 bits, 48 dB at 12, 57 dB at 16, against the 57.6 dB float design). Choose W<sub>h</sub> so that the quantisation floor sits about 5&ndash;10 dB below the spec.-->
+
+<h3>Bit-true biquad (Direct Form I)</h3>
+<!--ANNOT dspkit/fixed.py::biquad_fixed-->
+<ol class="notes">
+<li>DF-I keeps 4 state words (x1, x2, y1, y2) instead of 2, but all five products go into <b>one</b> wide accumulator with no intermediate rounding. That maps onto a single cascaded DSP48 MAC chain.</li>
+<li>The recursion is driven by the <em>saturated output</em> y. DF-II's internal node w[n] = x/A(z) has gain up to 1/min|A|, which for high-Q sections can overflow invisibly.</li>
+<li>Coefficients use Q(2,14) because |a1| &lt; 2 for any stable biquad.</li>
+<li>Python ints have unlimited precision, so <code>acc</code> is exact. Rounding happens once, at <code>&gt;&gt; n_coef</code>.</li>
+</ol>
+<!--/ANNOT-->
+<!--FIG 04_limit_cycle.png|<b>Zero-input limit cycle.</b> A resonator with r = 0.99 and &theta; = 0.3&pi; starts from y[&minus;1] = 3000 LSB with the input held at zero. The float version decays below 10<sup>&minus;4</sup> LSB. The Q15 version locks into a &plusmn;3 LSB oscillation: rounding makes the effective pole radius 1 for small signals. Fixes are error feedback (exercise 18), more state bits, or magnitude truncation.-->
+
+<h3>Exporting to hardware</h3>
+<!--ANNOT dspkit/fixed.py::write_mem-->
+<ol class="notes">
+<li>One two's-complement hex word per line, which is what <code>$readmemh</code> expects. &minus;1 at 16 bits is written as <code>ffff</code>.</li>
+<li><code>//</code> comment lines are allowed by Verilog's reader. Use them to record the format and how the file was generated.</li>
+</ol>
+<!--/ANNOT-->
+<p><code>ex04</code> writes three files: <code>fir31_q15.mem</code> (taps), <code>fir31_x.mem</code> (256 input codes) and <code>fir31_y_expected.mem</code> (the bit-true output with round-half-up). A stage-3 FIR is correct when its simulation reproduces the last file exactly.</p>
+<div class="codeblock"><div class="bar"><span>systemverilog (stage 3 preview)</span><button class="copy" type="button">Copy</button></div><pre><code class="language-verilog">logic signed [15:0] taps [31];
+logic signed [15:0] xin  [256];
+logic signed [15:0] yexp [256];
+initial begin
+  $readmemh("fir31_q15.mem", taps);
+  $readmemh("fir31_x.mem", xin);
+  $readmemh("fir31_y_expected.mem", yexp);
+end
+// ... drive xin[i] into the DUT, compare y_out against yexp[i] with ==, not "close enough"</code></pre></div>
+</section>
+
+<!-- ============================================================ 06 -->
+<section class="ch" id="multirate">
+<div class="chno">CHAPTER 06</div>
+<h2>Multirate and CIC</h2>
+<div class="chfile">dspkit/multirate.py &middot; downsample, upsample, polyphase_components, polyphase_decimate, polyphase_interpolate, resample_poly, cic_*</div>
+
+<div class="eq"><span class="lbl">type-1 polyphase decomposition and noble identity</span>
+<i>H</i>(z) = &sum;<sub><i>k</i>=0</sub><sup><i>M</i>&minus;1</sup> z<sup>&minus;<i>k</i></sup> <i>E<sub>k</sub></i>(z<sup><i>M</i></sup>), &nbsp; <i>e<sub>k</sub></i>[<i>n</i>] = <i>h</i>[<i>nM</i>+<i>k</i>] &nbsp;&nbsp;&nbsp;&nbsp; [<i>E</i>(z<sup><i>M</i></sup>)] &rarr; &darr;<i>M</i> &nbsp;&equiv;&nbsp; &darr;<i>M</i> &rarr; [<i>E</i>(z)]</div>
+<!--FIG 05_aliasing.png|<b>Why the anti-alias filter exists.</b> A 15 kHz tone downsampled from 48 kHz to 12 kHz folds to |15 &minus; 12| = 3 kHz and becomes indistinguishable from real content. Filtering first removes it.-->
+
+<!--ANNOT dspkit/multirate.py::polyphase_decimate-->
+<ol class="notes">
+<li><code>E</code> is the taps reshaped to (taps per branch, M) and transposed, so row k = h[k], h[k+M], h[k+2M], &hellip;</li>
+<li>Branch input x<sub>k</sub>[m] = x[mM &minus; k]: prepend k zeros, then take every M-th sample. This is the input commutator.</li>
+<li>Each branch filter runs at the <b>low</b> rate, and the branch outputs are summed.</li>
+<li>Equivalence check: <code>decimate_direct</code> (filter at the full rate, discard M&minus;1 of every M outputs) gives identical samples. Max difference measured: 8.9&times;10<sup>&minus;16</sup>.</li>
+</ol>
+<!--/ANNOT-->
+<div class="results">
+  <div><div class="v">1032</div><div class="k">multiplies per output, direct decimate-by-8 with 129 taps</div></div>
+  <div><div class="v">129</div><div class="k">multiplies per output, polyphase. Every product is used.</div></div>
+</div>
+<!--ANNOT dspkit/multirate.py::polyphase_interpolate-->
+<ol class="notes">
+<li>Each of the L branches filters the <em>original</em> low-rate input, so there are no multiplies by stuffed zeros.</li>
+<li><code>y[k::L] = branch[k]</code> is the output commutator: the branch outputs are interleaved.</li>
+<li>To restore amplitude, the prototype must have passband gain L, because zero-stuffing divides the average by L.</li>
+</ol>
+<!--/ANNOT-->
+
+<h3>CIC: decimation without multipliers</h3>
+<div class="eq"><i>H</i>(z) = [ (1 &minus; z<sup>&minus;<i>RM</i></sup>) / (1 &minus; z<sup>&minus;1</sup>) ]<sup><i>N</i></sup> &nbsp;&nbsp; |<i>H</i>(<i>f</i>)| = |sin(&pi;<i>RMf</i>) / sin(&pi;<i>f</i>)|<sup><i>N</i></sup> &nbsp;&nbsp; <i>B</i><sub>out</sub> = <i>B</i><sub>in</sub> + &lceil;<i>N</i> log<sub>2</sub>(<i>RM</i>)&rceil;</div>
+<!--ANNOT dspkit/multirate.py::cic_decimate-->
+<ol class="notes">
+<li>The register width comes from Hogenauer's bound. Every stage uses the same width, i.e. no pruning (exercise 22).</li>
+<li>The integrators are <code>cumsum</code> followed by a wrap to B bits. For any DC input they overflow continuously, and that is fine.</li>
+<li>The combs run <em>after</em> <code>v[::R]</code>, at the low rate, with differential delay M. By the noble identity, the comb z<sup>&minus;RM</sup> at the high rate becomes z<sup>&minus;M</sup> at the low rate.</li>
+<li>Because every operation is mod 2<sup>B</sup> and the true output fits in B bits, the wrapped result is exact. The test feeds full-scale DC and checks for exactly (2<sup>15</sup>&minus;1)&middot;R<sup>N</sup>.</li>
+</ol>
+<!--/ANNOT-->
+<!--FIG 05_cic.png|<b>R = 16, N = 4.</b> The nulls at multiples of f<sub>s</sub>/R sit exactly on the bands that alias to DC, so the CIC suppresses aliases where it matters most. The cost is a passband droop of 2.30 dB at 0.4 of the output Nyquist, which a 31-tap least-squares compensator running at the low rate flattens to 0.009 dB.-->
+<div class="pitfall"><b class="tag">Pitfalls</b><ul>
+<li>The CIC gain (RM)<sup>N</sup> is 65536 = 2<sup>16</sup> here. Discard it with a shift, and choose R and M so that it is a power of 2.</li>
+<li>Saturation inside the integrators <em>breaks</em> the CIC. Only wrap-around arithmetic gives the exact result.</li>
+<li>The compensator is designed in output-rate Nyquist units. Output frequency f maps to f/(2R) cycles per input sample.</li>
+</ul></div>
+</section>
+
+<!-- ============================================================ 07 -->
+<section class="ch" id="adaptive">
+<div class="chno">CHAPTER 07</div>
+<h2>Adaptive filters</h2>
+<div class="chfile">dspkit/adaptive.py &middot; regressor_matrix, lms, nlms, rls</div>
+<div class="tbl"><table>
+<tr><th>Algorithm</th><th>Update</th><th class="num">Cost / sample</th><th>Stability and behaviour</th></tr>
+<tr><td>LMS</td><td>w &larr; w + &mu; e u</td><td class="num">2M</td><td>0 &lt; &mu; &lt; 2/(M P<sub>x</sub>). Slows down when the input is coloured (eigenvalue spread).</td></tr>
+<tr><td>NLMS</td><td>w &larr; w + &mu; e u / (&epsilon; + u<sup>T</sup>u)</td><td class="num">3M</td><td>0 &lt; &mu; &lt; 2. Independent of input level.</td></tr>
+<tr><td>RLS</td><td>k = Pu/(&lambda;+u<sup>T</sup>Pu); w &larr; w + k e; P &larr; (P &minus; k u<sup>T</sup>P)/&lambda;</td><td class="num">O(M<sup>2</sup>)</td><td>Fast and largely insensitive to colouring. Memory is about 1/(1&minus;&lambda;) samples.</td></tr>
+</table></div>
+<!--ANNOT dspkit/adaptive.py::regressor_matrix-->
+<ol class="notes">
+<li>Row n is u[n] = [x[n], x[n&minus;1], &hellip;, x[n&minus;M+1]], the contents of the tapped delay line at time n.</li>
+<li><code>sliding_window_view</code> builds it without copying. <code>[:, ::-1]</code> puts the newest sample first, so <code>w @ u</code> matches the convolution order.</li>
+</ol>
+<!--/ANNOT-->
+<!--ANNOT dspkit/adaptive.py::lms-->
+<ol class="notes">
+<li>The order of operations is fixed: filter (<code>y = w @ u</code>), then error, then update. Using the a-priori error e = d &minus; w<sub>old</sub><sup>T</sup>u is what makes this LMS.</li>
+<li>The update is the gradient of e<sup>2</sup> with respect to w, which is &minus;2eu, with the factor 2 absorbed into &mu;.</li>
+<li><code>w = w + ...</code> creates a new array, so storing <code>W[n] = w</code> in the history does not alias.</li>
+</ol>
+<!--/ANNOT-->
+<!--ANNOT dspkit/adaptive.py::rls-->
+<ol class="notes">
+<li><code>P</code> starts at &delta;I, a weak prior. A large &delta; means "trust the data immediately".</li>
+<li><code>Pu</code> is computed once and reused for the gain and for the P update. The update <code>np.outer(k, Pu)</code> uses the fact that P is symmetric (u<sup>T</sup>P = (Pu)<sup>T</sup>).</li>
+<li>In finite precision, P drifts away from symmetric and positive-definite. Production code symmetrises it, P = (P+P<sup>T</sup>)/2, or uses QR-RLS.</li>
+</ol>
+<!--/ANNOT-->
+<!--FIG 06_adaptive.png|<b>Left:</b> identifying an 8-tap system with lowpass-coloured input, averaged over 30 runs. RLS reaches the &minus;40 dB noise floor in about 50 iterations; LMS is still near &minus;30 dB after 3000. <b>Right:</b> removing 50 Hz mains hum (with its 150 and 250 Hz harmonics, through an unknown coupling path) using NLMS and a clean hum reference. Hum power drops by 19.5 dB.-->
+</section>
+
+<!-- ============================================================ 08 -->
+<section class="ch" id="template">
+<div class="chno">CHAPTER 08</div>
+<h2>Writing a new block</h2>
+<p>Use this skeleton for any block you write for coursework. It has explicit state, a block-wise <code>process</code>, a reference test, and a streaming test. The example implements the RBJ peaking-EQ biquad, which you will need for the live equaliser in stage 2.</p>
+<div class="codeblock"><div class="bar"><span>mine/peaking_eq.py</span><button class="copy" type="button">Copy</button></div><pre><code class="language-python">import numpy as np
+
+
+def peaking_eq(f0, gain_db, Q, fs):
+    """RBJ cookbook peaking EQ -> one SOS row [b0 b1 b2 1 a1 a2].
+    Derived from the analog prototype H(s) = (s^2 + s(A/Q) + 1) / (s^2 + s/(AQ) + 1)
+    with a bilinear transform pre-warped at f0."""
+    A = 10 ** (gain_db / 40)
+    w0 = 2 * np.pi * f0 / fs
+    alpha = np.sin(w0) / (2 * Q)
+    b = np.array([1 + alpha * A, -2 * np.cos(w0), 1 - alpha * A])
+    a = np.array([1 + alpha / A, -2 * np.cos(w0), 1 - alpha / A])
+    return np.concatenate([b / a[0], a / a[0]])
+
+
+class Biquad:
+    """Streaming DF2T biquad. All memory is in self.s; process() can be called
+    on blocks of any length and gives the same result as one long call."""
+
+    def __init__(self, sos_row):
+        sos_row = np.asarray(sos_row, float)
+        self.b0, self.b1, self.b2, _, self.a1, self.a2 = sos_row / sos_row[3]
+        self.s = np.zeros(2)                      # [s1, s2]
+
+    def reset(self):
+        self.s[:] = 0.0
+
+    def process(self, x):
+        b0, b1, b2, a1, a2 = self.b0, self.b1, self.b2, self.a1, self.a2
+        s1, s2 = self.s                           # load state into locals (fast path)
+        y = np.empty(len(x))
+        for n, xn in enumerate(x):
+            yn = b0 * xn + s1
+            s1 = b1 * xn - a1 * yn + s2
+            s2 = b2 * xn - a2 * yn
+            y[n] = yn
+        self.s[:] = (s1, s2)                      # store state back
+        return y</code></pre></div>
+<div class="codeblock"><div class="bar"><span>tests/test_peaking_eq.py</span><button class="copy" type="button">Copy</button></div><pre><code class="language-python">import numpy as np
+import scipy.signal as ss
+from mine.peaking_eq import peaking_eq, Biquad
+
+rng = np.random.default_rng(0)
+
+
+def test_matches_reference():
+    sos = peaking_eq(1000, 6.0, 2.0, 48000)
+    x = rng.standard_normal(2000)
+    assert np.allclose(Biquad(sos).process(x), ss.sosfilt(sos[None, :], x))
+
+
+def test_block_split_invariance():
+    sos = peaking_eq(1000, 6.0, 2.0, 48000)
+    x = rng.standard_normal(2000)
+    whole = Biquad(sos).process(x)
+    bq = Biquad(sos)
+    parts = np.concatenate([bq.process(c) for c in np.array_split(x, 7)])
+    assert np.array_equal(whole, parts)          # bit-identical, not merely close
+
+
+def test_spec():
+    sos = peaking_eq(1000, 6.0, 2.0, 48000)
+    w, H = ss.sosfreqz(sos[None, :], [0, 1000, 23999], fs=48000)
+    assert np.allclose(20 * np.log10(abs(H)), [0, 6, 0], atol=0.05)</code></pre></div>
+<h3>Checklist</h3>
+<div class="tbl"><table>
+<tr><th>Item</th><th>Question to answer in code</th></tr>
+<tr><td>Interface</td><td>Input and output shapes and dtypes. Does output length equal input length (streaming) or the full convolution length?</td></tr>
+<tr><td>State</td><td>Where is all the memory? Can <code>reset()</code> reproduce the first call exactly?</td></tr>
+<tr><td>Reference</td><td>Which trusted implementation do you compare against, and with what tolerance?</td></tr>
+<tr><td>Edge inputs</td><td>Impulse, step, length-1 and empty arrays, full-scale DC, a sinusoid at exactly Nyquist.</td></tr>
+<tr><td>Spec</td><td>A test that measures the property you designed for: edge, ripple, attenuation, gain.</td></tr>
+<tr><td>Fixed-point twin</td><td>Where are the rounding points? What are the accumulator and state widths? What is the SQNR against float?</td></tr>
+</table></div>
+</section>
+
+<!-- ============================================================ 09 -->
+<section class="ch ex" id="exercises">
+<div class="chno">CHAPTER 09</div>
+<h2>Exercises</h2>
+<!--EXERCISES-->
+</section>
+
+<!-- ============================================================ 10 -->
+<section class="ch" id="files">
+<div class="chno">CHAPTER 10</div>
+<h2>Package files</h2>
+<p>All files in the package are below. Pick one to read it, or copy its contents. The zip contains the whole package, ready for <code>pip install -e .</code>.</p>
+<div class="dl"><button class="primary" id="dlzip" type="button">Download dsp-stage1.zip</button><span class="dlmsg" id="dlmsg"><!--ZIPSIZE--></span></div>
+<div class="files">
+  <div class="tree" id="tree" role="navigation" aria-label="Package files"></div>
+  <div class="view">
+    <div class="bar"><span id="fname">&ndash;</span><span class="meta" id="fmeta"></span><span><button class="copy" type="button" id="fcopy">Copy</button></span></div>
+    <pre id="fpre"><code id="fcode"></code></pre>
+    <div id="fimg" hidden></div>
+  </div>
+</div>
+</section>
+</div>
+</main>
+</div>
+
+<script id="files-data" type="application/json"><!--FILES_JSON--></script>
+<script id="zip-data" type="text/plain"><!--ZIP_B64--></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  var hl = window.hljs || null;
+  function highlightAll(root) {
+    if (!hl) return;
+    (root || document).querySelectorAll("pre code[class^='language-']").forEach(function (el) {
+      try { hl.highlightElement(el); } catch (e) {}
+    });
+  }
+  highlightAll();
+
+  // copy buttons
+  function copyText(text, btn) {
+    function done(ok) { var t = btn.textContent; btn.textContent = ok ? "Copied" : "Select + Ctrl-C"; setTimeout(function () { btn.textContent = t; }, 1400); }
+    try {
+      navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); });
+    } catch (e) { done(false); }
+  }
+  document.querySelectorAll(".codeblock button.copy, .annot button.copy").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var pre = btn.closest(".codeblock, .src").querySelector("pre");
+      copyText(pre.innerText, btn);
+    });
+  });
+
+  // chapter rail scroll-spy
+  var links = Array.prototype.slice.call(document.querySelectorAll("nav.rail a"));
+  var secs = links.map(function (a) { return document.querySelector(a.getAttribute("href")); });
+  function spy() {
+    var y = window.scrollY + 120, cur = 0;
+    secs.forEach(function (s, i) { if (s && s.offsetTop <= y) cur = i; });
+    links.forEach(function (a, i) { a.classList.toggle("active", i === cur); });
+  }
+  window.addEventListener("scroll", spy, { passive: true }); spy();
+
+  // file browser
+  var files = JSON.parse(document.getElementById("files-data").textContent);
+  var tree = document.getElementById("tree");
+  var fname = document.getElementById("fname"), fmeta = document.getElementById("fmeta");
+  var fcode = document.getElementById("fcode"), fpre = document.getElementById("fpre"), fimg = document.getElementById("fimg");
+  var current = null, buttons = {};
+  var lastDir = null;
+  files.forEach(function (f) {
+    var i = f.path.lastIndexOf("/");
+    var dir = i < 0 ? "" : f.path.slice(0, i);
+    if (dir !== lastDir) {
+      var d = document.createElement("div"); d.className = "dir"; d.textContent = (dir || "dsp-stage1") + "/"; tree.appendChild(d); lastDir = dir;
+    }
+    var b = document.createElement("button"); b.type = "button"; b.textContent = f.path.slice(i + 1); b.title = f.path;
+    b.addEventListener("click", function () { show(f.path); });
+    tree.appendChild(b); buttons[f.path] = b;
+  });
+  var byPath = {}; files.forEach(function (f) { byPath[f.path] = f; });
+  function langOf(p) {
+    if (/\.py$/.test(p)) return "python"; if (/\.md$/.test(p)) return "markdown"; if (/\.toml$/.test(p)) return "ini";
+    if (/\.html$/.test(p)) return "xml"; return "plaintext";
+  }
+  function show(path) {
+    var f = byPath[path]; if (!f) return; current = f;
+    Object.keys(buttons).forEach(function (k) { buttons[k].setAttribute("aria-current", k === path ? "true" : "false"); });
+    fname.textContent = path;
+    fmeta.textContent = f.size < 1024 ? f.size + " B" : (f.size / 1024).toFixed(1) + " KB";
+    if (f.kind === "image") {
+      fpre.hidden = true; fimg.hidden = false; fimg.innerHTML = "";
+      var im = document.createElement("img"); im.src = "data:image/png;base64," + f.b64; im.alt = path; fimg.appendChild(im);
+    } else {
+      fimg.hidden = true; fpre.hidden = false;
+      fcode.className = "language-" + langOf(path);
+      fcode.removeAttribute("data-highlighted");
+      fcode.textContent = f.text;
+      if (hl && f.text.length < 120000) { try { hl.highlightElement(fcode); } catch (e) {} }
+    }
+  }
+  document.getElementById("fcopy").addEventListener("click", function (e) {
+    if (current && current.kind !== "image") copyText(current.text, e.currentTarget);
+  });
+  show("dspkit/core.py");
+
+  // zip download: claude downloads capability when hosted, plain anchor download when opened from disk
+  var zipB64 = document.getElementById("zip-data").textContent.trim();
+  function zipBlob() {
+    var bin = atob(zipB64), u = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    return new Blob([u], { type: "application/zip" });
+  }
+  var dlBtn = document.getElementById("dlzip"), dlMsg = document.getElementById("dlmsg");
+  var downloads = null, hosted = !!(window.claude && window.claude.use);
+  if (hosted) {
+    window.claude.use("downloads").then(function (d) { downloads = d; if (!d) { dlBtn.disabled = true; dlMsg.textContent = "Downloads are not available in this view. Copy files individually below."; } });
+  }
+  dlBtn.addEventListener("click", function () {
+    if (downloads) {
+      downloads.save({ filename: "dsp-stage1.zip", data: zipBlob() }).then(function () {
+        dlMsg.textContent = "Saved dsp-stage1.zip";
+      }, function (err) {
+        var c = err && err.code;
+        dlMsg.textContent = c === "declined" ? "Download cancelled." : c === "rate_limited" ? "A save prompt is already open." : "Download unavailable here. Copy files individually below.";
+      });
+    } else if (!hosted) {
+      var url = URL.createObjectURL(zipBlob());
+      var a = document.createElement("a"); a.href = url; a.download = "dsp-stage1.zip";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    }
+  });
+})();
+</script>
